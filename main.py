@@ -20,7 +20,7 @@ def validate_token(token):
 def get_custom_object_info():
     token = request.args.get('token')
     
-    if not token:
+    if not token: 
         return jsonify({"error": "Invalid or missing token"}), 401
     
     # 获取自定义对象信息，这里使用示例数据
