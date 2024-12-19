@@ -14,13 +14,13 @@ custom_objects_data = [
 # 验证 token 的示例函数（请替换为实际的验证逻辑）
 def validate_token(token):
     # 这里只是一个简单的示例，实际应该根据你的需求实现
-    return token == "your_secret_token"
+    # return token
 
 @app.route('/api/getCustomObjectInfo', methods=['GET'])
 def get_custom_object_info():
     token = request.args.get('token')
     
-    if not token or not validate_token(token):
+    if not token:
         return jsonify({"error": "Invalid or missing token"}), 401
     
     # 获取自定义对象信息，这里使用示例数据
