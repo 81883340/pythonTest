@@ -26,7 +26,7 @@ def get_custom_object_info():
     for obj in custom_objects_data:
         custom_objects.append({
             "object_name": obj["object_Name"],  # 注意键名匹配
-            "last_updated": datetime.strptime(obj["LastModifiedDate"], "%Y-%m-%dT%H:%M:%S").isoformat()
+            "LastModifiedDate": datetime.strptime(obj["LastModifiedDate"], "%Y-%m-%dT%H:%M:%S").isoformat()
         })
     
     return jsonify(custom_objects)
