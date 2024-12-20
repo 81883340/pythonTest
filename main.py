@@ -19,8 +19,8 @@ def validate_token(token):
 def get_custom_object_info():
     token = request.args.get('token')
     
-    if not token:
-        return jsonify({"error": "Invalid or missing token"}), 401
+    # if not token:
+        # return jsonify({"error": "Invalid or missing token"}), 401
     
     custom_objects = []
     for obj in custom_objects_data:
