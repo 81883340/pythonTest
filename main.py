@@ -15,7 +15,7 @@ custom_objects_data = [
 def login_to_salesforce(token):
     try:
         # 使用提供的token作为OAuth Token来登录到Salesforce
-        sf = Salesforce(instance_url='login.salesforce.com', access_token=token)
+        sf = Salesforce(instance_url='login.salesforce.com', session_id=token)
         return sf
     except SalesforceAuthenticationFailed as e:
         print(f"Salesforce Authentication Failed: {e}")
