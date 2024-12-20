@@ -1,7 +1,5 @@
 from flask import Flask, jsonify, request
 from datetime import datetime
-from simple_salesforce import Salesforce, SFType
-from simple_salesforce.exceptions import SalesforceAuthenticationFailed
 
 app = Flask(__name__)
 
@@ -12,22 +10,16 @@ custom_objects_data = [
     {"object_Name": "Test__c", "LastModifiedDate": "2024-12-19T10:45:00"}
 ]
 
-def login_to_salesforce(token):
-    try:
-        # 使用提供的token作为OAuth Token来登录到Salesforce
-        sf = Salesforce(instance_url='https://ibm176-dev-ed.develop.my.salesforce.com', session_id=token)
-        return sf
-    except SalesforceAuthenticationFailed as e:
-        print(f"Salesforce Authentication Failed: {e}")
-        return None
+# 验证 token 的示例函数（请替换为实际的验证逻辑）
+def validate_token(token):
+    # 这里只是一个简单的示例，实际应该根据你的需求实现
+    return token == "your_secret_token"  # 假设这是一个有效的令牌
 
 @app.route('/api/getCustomObjectInfo', methods=['GET'])
 def get_custom_object_info():
     token = request.args.get('token')
     
-    # 尝试使用token登录Salesforce
-    sf = login_to_salesforce(token)
-    if not sf:
+    if not token or not validate_token(token):
         return jsonify({"error": "Invalid or missing token"}), 401
     
     custom_objects = []
