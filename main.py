@@ -14,7 +14,6 @@ custom_objects_data = [
 
 def login_to_salesforce(token):
     try:
-        token = "00DQy00000HEFnt!AQEAQJzDZs9D.beaEza2OuvgMNJIoNQNgPUkcBpNLI8tmzqHO7kmXpqFEIV5EK1YiQavoeen5w2hjJKicKIiE0sYHk9.bJUI"
         # 使用提供的token作为OAuth Token来登录到Salesforce
         sf = Salesforce(instance_url='https:/login.salesforce.com', session_id=token)
         return sf
