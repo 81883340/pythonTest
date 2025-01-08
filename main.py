@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
-import requests
+from simple_salesforce import Salesforce
 
 app = Flask(__name__)
 
@@ -10,40 +10,34 @@ def get_sf_objects():
     if not access_token:
         return jsonify({'error': 'access_token is missing'}), 400
 
-    # Salesforce instance URL (you may need to retrieve this from OAuth response)
-    instance_url = 'https://your-domain.my.salesforce.com'  # Replace with actual instance URL
+    # Salesforce instance URL
+    instance_url = 'https://ibm176-dev-ed.develop.my.salesforce.com'  # Replace with actual instance URL
+
+    # Initialize Salesforce connection
+    sf = Salesforce(instance_url=instance_url, session_id=access_token)
 
     # Step 1: Get list of all custom objects
-    metadata_url = f"{instance_url}/services/data/v53.0/sobjects/"
-    headers = {
-        'Authorization': f'Bearer {access_token}',
-        'Content-Type': 'application/json'
-    }
-    response = requests.get(metadata_url, headers=headers)
-    if response.status_code != 200:
-        return jsonify({'error': 'Failed to retrieve objects from Salesforce'}), 500
-    objects = response.json()['sobjects']
+    objects = sf.describe()['sobjects']
+    custom_objects = [obj['name'] for obj in objects if obj.get('custom') and obj.get('name').endswith('__c')]
 
-    custom_objects = [obj for obj in objects if obj['custom'] and obj['name'].endswith('__c')]
-
-    # Step 2: Query each custom object for records updated or created in last 90 days
+    # Step 2: Set cutoff date
     cutoff_date = datetime.utcnow() - timedelta(days=90)
-    cutoff_date_str = cutoff_date.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    cutoff_date_str = cutoff_date.strftime('%Y-%m-%dT%H:%M:%SZ')
 
     inactive_objects = []
-    for obj in custom_objects:
-        object_name = obj['name']
-        query = f"SELECT Id FROM {object_name} WHERE CreatedDate >= '{cutoff_date_str}' OR LastModifiedDate >= '{cutoff_date_str}' LIMIT 1"
-        query_url = f"{instance_url}/services/data/v53.0/query/"
-        query_response = requests.get(query_url, headers=headers, params={'q': query})
-        if query_response.status_code != 200:
-            # Handle query error, e.g., insufficient permissions
+    for obj_name in custom_objects:
+        try:
+            # Step 3: Query each custom object
+            query = f"SELECT Id FROM {obj_name} WHERE LastModifiedDate >= '{cutoff_date_str}' LIMIT 1"
+            records = sf.query(query)['records']
+            if not records:
+                inactive_objects.append(obj_name)
+        except Exception as e:
+            # Handle exceptions for objects that cause errors
+            print(f"Error querying {obj_name}: {e}")
             continue
-        records = query_response.json().get('records', [])
-        if not records:
-            inactive_objects.append(object_name)
 
-    # Step 3: Return the list of inactive custom objects
+    # Step 4: Return the list of inactive custom objects
     return jsonify(inactive_objects)
 
 if __name__ == '__main__':
