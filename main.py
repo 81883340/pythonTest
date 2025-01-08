@@ -11,7 +11,7 @@ def get_sf_objects():
         return jsonify({'error': 'access_token is missing'}), 400
 
     # Replace with your actual Salesforce instance URL
-    instance_url = 'https://your-domain.my.salesforce.com'
+    instance_url = 'https://ibm176-dev-ed.develop.my.salesforce.com'
 
     # Initialize Salesforce connection
     sf = Salesforce(instance_url=instance_url, session_id=access_token)
