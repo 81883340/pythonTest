@@ -4,7 +4,7 @@ import requests
 
 app = Flask(__name__)
 
-@app.route('/sf_objects', methods=['GET'])
+@app.route('/api/getCustomObjectInfo', methods=['GET'])
 def get_sf_objects():
     access_token = request.args.get('access_token')
     if not access_token:
