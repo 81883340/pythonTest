@@ -30,8 +30,9 @@ def get_sf_objects():
             # Step 3: Query each custom object
             query = f"SELECT Id FROM {obj_name} WHERE LastModifiedDate >= '{cutoff_date_str}' LIMIT 1"
             records = sf.query(query)['records']
-            if not records:
-                inactive_objects.append(obj_name)
+            inactive_objects.append(obj_name)
+            # if not records:
+                # inactive_objects.append(obj_name)
         except Exception as e:
             # Handle exceptions for objects that cause errors
             print(f"Error querying {obj_name}: {e}")
