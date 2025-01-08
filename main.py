@@ -18,7 +18,7 @@ def get_sf_objects():
 
     # Step 1: Get list of all custom objects
     objects = sf.describe()['sobjects']
-    custom_objects = [obj['name'] for obj in objects if obj.get('custom') and obj.get('name').endswith('__c')]
+    custom_objects = [obj['name'] for obj in objects if obj.get('custom')]
 
     # Step 2: Set cutoff date
     cutoff_date = datetime.utcnow() - timedelta(days=90)
