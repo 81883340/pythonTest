@@ -11,41 +11,7 @@ ENCRYPTION_KEY = b'3MVG9aNlkJwuH9vPePXJ1vP3a1vEBPqE'
 
 def decrypt_token(encrypted_token):
     try:
-        # URL解码
-        encrypted_token = urllib.parse.unquote(encrypted_token)
-        print(f"Encrypted token (URL decoded): {encrypted_token}")
-
-        # 直接处理原始数据（假设不是Base64编码）
-        encrypted_data = encrypted_token.encode('utf-8')
-        print(f"Encrypted data (raw, hex): {encrypted_data.hex()}")
-
-        # 提取IV（前16字节）和密文
-        iv = encrypted_data[:16]
-        ciphertext = encrypted_data[16:]
-        print(f"IV (hex): {iv.hex()}")
-        print(f"Ciphertext (hex): {ciphertext.hex()}")
-
-        # 创建AES解密器
-        cipher = AES.new(ENCRYPTION_KEY, AES.MODE_CBC, iv)
-        # 解密数据
-        decrypted_padded = cipher.decrypt(ciphertext)
-        print(f"Decrypted data (with padding, hex): {decrypted_padded.hex()}")
-
-        # 检查填充
-        try:
-            decrypted_data = unpad(decrypted_padded, AES.block_size).decode('utf-8')
-            print(f"Decrypted data (without padding): {decrypted_data}")
-        except ValueError as e:
-            print(f"Padding error: {e}")
-            # 如果填充不正确，尝试手动去除填充
-            padding_length = decrypted_padded[-1]
-            if padding_length <= AES.block_size:
-                decrypted_data = decrypted_padded[:-padding_length].decode('utf-8')
-                print(f"Decrypted data (manual unpad): {decrypted_data}")
-            else:
-                raise ValueError("Invalid padding length")
-
-        return decrypted_data
+        return base64.b64decode(encrypted_token, '-_')
     except Exception as e:
         raise ValueError(f"Decryption failed: {str(e)}")
 
