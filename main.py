@@ -98,58 +98,74 @@ def delete_custom_object():
     """
     Delete one or more custom objects in the target Salesforce org.
     """
+    logging.debug("Received request to delete custom objects")
+
     # Step 1: Get encrypted access_token and instance_url from query parameters
     encrypted_token = request.args.get('access_token')
     instance_url = request.args.get('instance_url')
 
     # Step 2: Validate required parameters
     if not encrypted_token or not instance_url:
+        logging.error("Missing access_token or instance_url")
         return jsonify({'error': 'Both access_token and instance_url are required'}), 400
 
     # Step 3: Get the list of object names to delete from the request body
     data = request.get_json()
     if not data or 'object_names' not in data:
+        logging.error("Missing object_names in request body")
         return jsonify({'error': 'object_names is required in the request body'}), 400
 
     object_names = data['object_names']
     if not isinstance(object_names, list):
+        logging.error("object_names must be a list")
         return jsonify({'error': 'object_names must be a list'}), 400
 
     try:
         # Step 4: Decrypt the access_token
         access_token = decrypt_token(encrypted_token)
+        logging.debug("Access token decrypted successfully")
     except Exception as e:
+        logging.error(f"Failed to decrypt access token: {str(e)}")
         return jsonify({'error': 'Invalid token: ' + str(e)}), 401
 
     try:
         # Step 5: Initialize Salesforce connection
         sf = initialize_salesforce_connection(access_token, instance_url)
-
-        # Step 6: Use Metadata API to delete each custom object
-        results = []
-        metadata = sf.mdapi  # Access Metadata API
-
-        for object_name in object_names:
-            try:
-                # Attempt to delete the custom object
-                delete_result = metadata.CustomObject.delete(object_name)
-
-                # Check if the deletion was successful
-                if delete_result[0]['success']:
-                    results.append({"object_name": object_name, "status": "success"})
-                else:
-                    error_message = delete_result[0].get("errors", "Unknown error")
-                    results.append({"object_name": object_name, "status": "failed", "error": error_message})
-            except Exception as e:
-                # Handle errors during deletion
-                results.append({"object_name": object_name, "status": "failed", "error": str(e)})
-
-        # Step 7: Return the results of the delete operations
-        return jsonify({'results': results})
-
+        logging.debug("Salesforce connection initialized successfully")
     except Exception as e:
-        # Handle Salesforce connection or other errors
+        logging.error(f"Failed to initialize Salesforce connection: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+    # Step 6: Use Metadata API to delete each custom object
+    results = []
+    metadata = sf.mdapi  # Access Metadata API
+
+    for object_name in object_names:
+        try:
+            logging.debug(f"Attempting to delete object: {object_name}")
+            # Attempt to delete the custom object
+            delete_result = metadata.CustomObject.delete(object_name)
+
+            # Check if the result is None
+            if delete_result is None:
+                logging.error(f"Delete operation returned None for object: {object_name}")
+                results.append({"object_name": object_name, "status": "failed", "error": "Delete operation returned None"})
+                continue
+
+            # Check if the deletion was successful
+            if delete_result[0]['success']:
+                logging.debug(f"Successfully deleted object: {object_name}")
+                results.append({"object_name": object_name, "status": "success"})
+            else:
+                error_message = delete_result[0].get("errors", "Unknown error")
+                logging.error(f"Failed to delete object {object_name}: {error_message}")
+                results.append({"object_name": object_name, "status": "failed", "error": error_message})
+        except Exception as e:
+            logging.error(f"Error deleting object {object_name}: {str(e)}")
+            results.append({"object_name": object_name, "status": "failed", "error": str(e)})
+
+    # Step 7: Return the results of the delete operations
+    return jsonify({'results': results})
 
 if __name__ == '__main__':
     # Start the Flask service
