@@ -6,7 +6,7 @@ import base64
 app = Flask(__name__)
 
 # Hardcoded encryption key (must match the key used in Apex)
-ENCRYPTION_KEY = b'3MVG9aNlkJwuH9vPePXJ1vP3a1vEBPqE'  # Replace with your actual 32-byte key
+ENCRYPTION_KEY = b'your-32-byte-encryption-key'  # Replace with your actual 32-byte key
 
 def decrypt_token(encrypted_token):
     """
@@ -48,13 +48,13 @@ def get_sf_objects():
     """
     Retrieve custom objects in Salesforce that have not been modified in the last 90 days.
     """
-    # Step 1: Get encrypted access_token from the header and instance_url from query parameters
+    # Step 1: Get encrypted access_token and instance_url from query parameters
     encrypted_token = request.args.get('access_token')
     instance_url = request.args.get('instance_url')
 
     # Step 2: Validate required parameters
     if not encrypted_token or not instance_url:
-        return jsonify({'error': 'Both Authorization header and instance_url are required'}), 400
+        return jsonify({'error': 'Both access_token and instance_url are required'}), 400
 
     try:
         # Step 3: Decrypt the access_token
@@ -98,13 +98,13 @@ def delete_custom_object():
     """
     Delete a custom object in the target Salesforce org.
     """
-    # Step 1: Get encrypted access_token from the header and instance_url from query parameters
+    # Step 1: Get encrypted access_token and instance_url from query parameters
     encrypted_token = request.args.get('access_token')
     instance_url = request.args.get('instance_url')
 
     # Step 2: Validate required parameters
     if not encrypted_token or not instance_url:
-        return jsonify({'error': 'Both Authorization header and instance_url are required'}), 400
+        return jsonify({'error': 'Both access_token and instance_url are required'}), 400
 
     # Step 3: Get the object name to delete from the request body
     data = request.get_json()
