@@ -22,17 +22,28 @@ def decrypt_token(encrypted_token):
     try:
         # URL解码
         encrypted_token = urllib.parse.unquote(encrypted_token)
+        print(f"Encrypted token (URL decoded): {encrypted_token}")
+
         # 解码Base64
         encrypted_data = decode_base64_urlsafe(encrypted_token)
+        print(f"Encrypted data (Base64 decoded, hex): {encrypted_data.hex()}")
+
         # 提取IV（前16字节）和密文
         iv = encrypted_data[:16]
         ciphertext = encrypted_data[16:]
+        print(f"IV (hex): {iv.hex()}")
+        print(f"Ciphertext (hex): {ciphertext.hex()}")
+
         # 创建AES解密器
         cipher = AES.new(ENCRYPTION_KEY, AES.MODE_CBC, iv)
         # 解密数据
         decrypted_padded = cipher.decrypt(ciphertext)
+        print(f"Decrypted data (with padding, hex): {decrypted_padded.hex()}")
+
         # 去除PKCS7填充
         decrypted_data = unpad(decrypted_padded, AES.block_size).decode('utf-8')
+        print(f"Decrypted data (without padding): {decrypted_data}")
+
         return decrypted_data
     except Exception as e:
         raise ValueError(f"Decryption failed: {str(e)}")
