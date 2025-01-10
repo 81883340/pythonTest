@@ -6,7 +6,7 @@ import base64
 app = Flask(__name__)
 
 # Hardcoded encryption key (must match the key used in Apex)
-ENCRYPTION_KEY = b'3MVG9aNlkJwuH9vPePXJ1vP3a1vEBPqE'  # Replace with your actual 32-byte key
+ENCRYPTION_KEY = b'3MVG9aNlkJwuH9vPePXJ1vP3a1vEBPqE'  # 32-byte key
 
 def decrypt_token(encrypted_token):
     """
@@ -15,18 +15,20 @@ def decrypt_token(encrypted_token):
     :return: Decrypted access_token
     """
     try:
-        # Base64 decode
+        print(f"Encrypted token (Base64): {encrypted_token}")
         encrypted_data = base64.b64decode(encrypted_token)
-        # Extract IV (first 16 bytes) and the actual encrypted data
+        print(f"Encrypted data (bytes): {encrypted_data}")
         iv = encrypted_data[:16]
+        print(f"IV (hex): {iv.hex()}")
         ciphertext = encrypted_data[16:]
-        # Initialize AES decryptor
+        print(f"Ciphertext (hex): {ciphertext.hex()}")
         cipher = AES.new(ENCRYPTION_KEY, AES.MODE_CBC, iv)
-        # Decrypt
         decrypted_data = cipher.decrypt(ciphertext)
-        # Remove padding (PKCS7)
+        print(f"Decrypted data (with padding): {decrypted_data}")
         padding_length = decrypted_data[-1]
+        print(f"Padding length: {padding_length}")
         decrypted_data = decrypted_data[:-padding_length]
+        print(f"Decrypted data (without padding): {decrypted_data}")
         return decrypted_data.decode('utf-8')
     except Exception as e:
         raise ValueError("Decryption failed: " + str(e))
@@ -67,7 +69,11 @@ def get_sf_objects():
         sf = initialize_salesforce_connection(access_token, instance_url)
 
         # Step 5: Get all custom objects
-        objects = sf.describe()['sobjects']
+        describe_result = sf.describe()
+        if 'sobjects' not in describe_result:
+            return jsonify({'error': 'Failed to retrieve Salesforce objects'}), 500
+
+        objects = describe_result['sobjects']
         custom_objects = [
             obj['name'] for obj in objects
             if obj.get('custom') and obj.get('name').endswith('__c')
@@ -79,8 +85,8 @@ def get_sf_objects():
             try:
                 # Query if any records have been modified in the last 90 days
                 query = f"SELECT Id FROM {obj_name} WHERE LastModifiedDate >= LAST_N_DAYS:90 LIMIT 1"
-                records = sf.query(query)['records']
-                if not records:
+                query_result = sf.query(query)
+                if not query_result['records']:
                     inactive_objects.append(obj_name)
             except Exception as e:
                 print(f"Error querying {obj_name}: {e}")
@@ -88,50 +94,6 @@ def get_sf_objects():
 
         # Step 7: Return the list of inactive custom objects
         return jsonify({'inactive_objects': inactive_objects})
-
-    except Exception as e:
-        # Handle Salesforce connection or other errors
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/deleteCustomObject', methods=['POST'])
-def delete_custom_object():
-    """
-    Delete a custom object in the target Salesforce org.
-    """
-    # Step 1: Get encrypted access_token and instance_url from query parameters
-    encrypted_token = request.args.get('access_token')
-    instance_url = request.args.get('instance_url')
-
-    # Step 2: Validate required parameters
-    if not encrypted_token or not instance_url:
-        return jsonify({'error': 'Both access_token and instance_url are required'}), 400
-
-    # Step 3: Get the object name to delete from the request body
-    data = request.get_json()
-    if not data or 'object_name' not in data:
-        return jsonify({'error': 'object_name is required in the request body'}), 400
-
-    object_name = data['object_name']
-
-    try:
-        # Step 4: Decrypt the access_token
-        access_token = decrypt_token(encrypted_token)
-    except Exception as e:
-        return jsonify({'error': 'Invalid token: ' + str(e)}), 401
-
-    try:
-        # Step 5: Initialize Salesforce connection
-        sf = initialize_salesforce_connection(access_token, instance_url)
-
-        # Step 6: Use Metadata API to delete the custom object
-        metadata = sf.mdapi  # Access Metadata API
-        delete_result = metadata.CustomObject.delete(object_name)
-
-        # Step 7: Check the result of the delete operation
-        if delete_result[0]['success']:
-            return jsonify({'message': f'Custom object {object_name} deleted successfully'})
-        else:
-            return jsonify({'error': f'Failed to delete custom object {object_name}: {delete_result[0]["errors"]}'}), 500
 
     except Exception as e:
         # Handle Salesforce connection or other errors
