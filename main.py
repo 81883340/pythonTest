@@ -153,11 +153,11 @@ def delete_custom_object():
                 continue
 
             # Check if the deletion was successful
-            if delete_result[0]['success']:
+            if isinstance(delete_result, list) and len(delete_result) > 0 and delete_result[0]['success']:
                 logging.debug(f"Successfully deleted object: {object_name}")
                 results.append({"object_name": object_name, "status": "success"})
             else:
-                error_message = delete_result[0].get("errors", "Unknown error")
+                error_message = delete_result[0].get("errors", "Unknown error") if isinstance(delete_result, list) else "Invalid response format"
                 logging.error(f"Failed to delete object {object_name}: {error_message}")
                 results.append({"object_name": object_name, "status": "failed", "error": error_message})
         except Exception as e:
