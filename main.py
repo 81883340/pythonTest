@@ -31,9 +31,19 @@ def decrypt_token(encrypted_token):
         decrypted_padded = cipher.decrypt(ciphertext)
         print(f"Decrypted data (with padding, hex): {decrypted_padded.hex()}")
 
-        # 去除PKCS7填充
-        decrypted_data = unpad(decrypted_padded, AES.block_size).decode('utf-8')
-        print(f"Decrypted data (without padding): {decrypted_data}")
+        # 检查填充
+        try:
+            decrypted_data = unpad(decrypted_padded, AES.block_size).decode('utf-8')
+            print(f"Decrypted data (without padding): {decrypted_data}")
+        except ValueError as e:
+            print(f"Padding error: {e}")
+            # 如果填充不正确，尝试手动去除填充
+            padding_length = decrypted_padded[-1]
+            if padding_length <= AES.block_size:
+                decrypted_data = decrypted_padded[:-padding_length].decode('utf-8')
+                print(f"Decrypted data (manual unpad): {decrypted_data}")
+            else:
+                raise ValueError("Invalid padding length")
 
         return decrypted_data
     except Exception as e:
