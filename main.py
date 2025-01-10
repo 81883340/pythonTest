@@ -49,7 +49,7 @@ def get_sf_objects():
     Retrieve custom objects in Salesforce that have not been modified in the last 90 days.
     """
     # Step 1: Get encrypted access_token from the header and instance_url from query parameters
-    encrypted_token = request.headers.get('Authorization', '').split('Bearer ')[-1]
+    encrypted_token = request.args.get('access_token')
     instance_url = request.args.get('instance_url')
 
     # Step 2: Validate required parameters
@@ -99,7 +99,7 @@ def delete_custom_object():
     Delete a custom object in the target Salesforce org.
     """
     # Step 1: Get encrypted access_token from the header and instance_url from query parameters
-    encrypted_token = request.headers.get('Authorization', '').split('Bearer ')[-1]
+    encrypted_token = request.args.get('access_token')
     instance_url = request.args.get('instance_url')
 
     # Step 2: Validate required parameters
