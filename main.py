@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify
-from simple_salesforce import Salesforce
 from Crypto.Cipher import AES
 import base64
 
@@ -15,20 +14,24 @@ def decrypt_token(encrypted_token):
     :return: Decrypted access_token
     """
     try:
-        print(f"Encrypted token (Base64): {encrypted_token}")
+        # Base64 decode the encrypted token
         encrypted_data = base64.b64decode(encrypted_token)
-        print(f"Encrypted data (bytes): {encrypted_data}")
+        
+        # Extract IV (first 16 bytes) and ciphertext
         iv = encrypted_data[:16]
-        print(f"IV (hex): {iv.hex()}")
         ciphertext = encrypted_data[16:]
-        print(f"Ciphertext (hex): {ciphertext.hex()}")
+        
+        # Initialize AES cipher
         cipher = AES.new(ENCRYPTION_KEY, AES.MODE_CBC, iv)
+        
+        # Decrypt the ciphertext
         decrypted_data = cipher.decrypt(ciphertext)
-        print(f"Decrypted data (with padding): {decrypted_data}")
+        
+        # Remove PKCS7 padding
         padding_length = decrypted_data[-1]
-        print(f"Padding length: {padding_length}")
         decrypted_data = decrypted_data[:-padding_length]
-        print(f"Decrypted data (without padding): {decrypted_data}")
+        
+        # Return the decrypted token as a string
         return decrypted_data.decode('utf-8')
     except Exception as e:
         raise ValueError("Decryption failed: " + str(e))
@@ -41,6 +44,7 @@ def initialize_salesforce_connection(access_token, instance_url):
     :return: Salesforce connection object
     """
     try:
+        from simple_salesforce import Salesforce
         return Salesforce(instance_url=instance_url, session_id=access_token)
     except Exception as e:
         raise ValueError(f"Failed to initialize Salesforce connection: {str(e)}")
@@ -60,8 +64,7 @@ def get_sf_objects():
 
     try:
         # Step 3: Decrypt the access_token
-        # access_token = decrypt_token(encrypted_token)
-        access_token = encrypted_token
+        access_token = decrypt_token(encrypted_token)
     except Exception as e:
         return jsonify({'error': 'Invalid token: ' + str(e)}), 401
 
