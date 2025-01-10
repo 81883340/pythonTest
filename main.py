@@ -137,13 +137,32 @@ def delete_custom_object():
         logging.error(f"Failed to initialize Salesforce connection: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-    # Step 6: Use Metadata API to delete each custom object
+    # Step 6: Get all custom objects
+    try:
+        objects = sf.describe()['sobjects']
+        custom_objects = [
+            obj['name'] for obj in objects
+            if obj.get('custom') and obj.get('name').endswith('__c')
+        ]
+        logging.debug(f"Available custom objects: {custom_objects}")
+    except Exception as e:
+        logging.error(f"Failed to fetch custom objects: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+    # Step 7: Use Metadata API to delete each custom object
     results = []
     metadata = sf.mdapi  # Access Metadata API
 
     for object_name in object_names:
         try:
             logging.debug(f"Attempting to delete object: {object_name}")
+
+            # Check if the object exists
+            if object_name not in custom_objects:
+                logging.error(f"Object {object_name} does not exist")
+                results.append({"object_name": object_name, "status": "failed", "error": "Object does not exist"})
+                continue
+
             # Attempt to delete the custom object
             delete_result = metadata.CustomObject.delete(object_name)
 
@@ -165,7 +184,7 @@ def delete_custom_object():
             logging.error(f"Error deleting object {object_name}: {str(e)}")
             results.append({"object_name": object_name, "status": "failed", "error": str(e)})
 
-    # Step 7: Return the results of the delete operations
+    # Step 8: Return the results of the delete operations
     return jsonify({'results': results})
 
 if __name__ == '__main__':
