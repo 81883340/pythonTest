@@ -166,27 +166,25 @@ def delete_custom_object():
             # Attempt to delete the custom object
             delete_result = metadata.CustomObject.delete(object_name)
 
-            # Check if the result is None
+            # If delete_result is None, assume the operation was successful
             if delete_result is None:
-                logging.error(f"Delete operation returned None for object: {object_name}")
-                results.append({"object_name": object_name, "status": "failed", "error": "Delete operation returned None"})
-                continue
-
-            # Check if the deletion was successful
-            if isinstance(delete_result, list) and len(delete_result) > 0 and delete_result[0]['success']:
-                logging.debug(f"Successfully deleted object: {object_name}")
+                logging.debug(f"Delete operation returned None for object: {object_name}. Assuming success.")
                 results.append({"object_name": object_name, "status": "success"})
             else:
-                error_message = delete_result[0].get("errors", "Unknown error") if isinstance(delete_result, list) else "Invalid response format"
-                logging.error(f"Failed to delete object {object_name}: {error_message}")
-                results.append({"object_name": object_name, "status": "failed", "error": error_message})
+                # Check if the deletion was successful
+                if isinstance(delete_result, list) and len(delete_result) > 0 and delete_result[0]['success']:
+                    logging.debug(f"Successfully deleted object: {object_name}")
+                    results.append({"object_name": object_name, "status": "success"})
+                else:
+                    error_message = delete_result[0].get("errors", "Unknown error") if isinstance(delete_result, list) else "Invalid response format"
+                    logging.error(f"Failed to delete object {object_name}: {error_message}")
+                    results.append({"object_name": object_name, "status": "failed", "error": error_message})
         except Exception as e:
             logging.error(f"Error deleting object {object_name}: {str(e)}")
             results.append({"object_name": object_name, "status": "failed", "error": str(e)})
 
     # Step 8: Return the results of the delete operations
     return jsonify({'results': results})
-
 if __name__ == '__main__':
     # Start the Flask service
     app.run(debug=True)
