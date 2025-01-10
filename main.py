@@ -9,15 +9,29 @@ app = Flask(__name__)
 # 确保密钥是32字节
 ENCRYPTION_KEY = b'3MVG9aNlkJwuH9vPePXJ1vP3a1vEBPqE'
 
+def decode_base64_urlsafe(data):
+    """解码URL安全的Base64字符串，并处理填充问题"""
+    # 如果长度不是4的倍数，补全填充符
+    missing_padding = len(data) % 4
+    if missing_padding:
+        data += '=' * (4 - missing_padding)
+    # 使用urlsafe_b64decode解码
+    return base64.urlsafe_b64decode(data)
+
 def decrypt_token(encrypted_token):
     try:
         # URL解码
         encrypted_token = urllib.parse.unquote(encrypted_token)
-        encrypted_data = base64.b64decode(encrypted_token)
+        # 解码Base64
+        encrypted_data = decode_base64_urlsafe(encrypted_token)
+        # 提取IV（前16字节）和密文
         iv = encrypted_data[:16]
         ciphertext = encrypted_data[16:]
+        # 创建AES解密器
         cipher = AES.new(ENCRYPTION_KEY, AES.MODE_CBC, iv)
+        # 解密数据
         decrypted_padded = cipher.decrypt(ciphertext)
+        # 去除PKCS7填充
         decrypted_data = unpad(decrypted_padded, AES.block_size).decode('utf-8')
         return decrypted_data
     except Exception as e:
