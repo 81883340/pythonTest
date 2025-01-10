@@ -93,7 +93,7 @@ def get_sf_objects():
         # Handle Salesforce connection or other errors
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/deleteCustomObject', methods=['POST'])
+@app.route('/api/deleteCustomObject', methods=['GET'])
 def delete_custom_object():
     """
     Delete a custom object in the target Salesforce org.
