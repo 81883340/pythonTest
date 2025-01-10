@@ -11,20 +11,11 @@ ENCRYPTION_KEY = b'3MVG9aNlkJwuH9vPePXJ1vP3a1vEBPqE'
 def decrypt_token(encrypted_token):
     try:
         encrypted_data = base64.b64decode(encrypted_token)
-        
-        # 提取IV和密文
         iv = encrypted_data[:16]
         ciphertext = encrypted_data[16:]
-        
-        # 创建AES解密器
         cipher = AES.new(ENCRYPTION_KEY, AES.MODE_CBC, iv)
-        
-        # 解密数据
         decrypted_padded = cipher.decrypt(ciphertext)
-        
-        # 去除PKCS7填充
         decrypted_data = unpad(decrypted_padded, AES.block_size).decode('utf-8')
-        
         return decrypted_data
     except Exception as e:
         raise ValueError(f"Decryption failed: {str(e)}")
