@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 import base64
+import urllib.parse
 
 app = Flask(__name__)
 
@@ -10,6 +11,8 @@ ENCRYPTION_KEY = b'3MVG9aNlkJwuH9vPePXJ1vP3a1vEBPqE'
 
 def decrypt_token(encrypted_token):
     try:
+        # URL解码
+        encrypted_token = urllib.parse.unquote(encrypted_token)
         encrypted_data = base64.b64decode(encrypted_token)
         iv = encrypted_data[:16]
         ciphertext = encrypted_data[16:]
