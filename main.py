@@ -1,36 +1,73 @@
 from flask import Flask, request, jsonify
 from simple_salesforce import Salesforce
+from Crypto.Cipher import AES
+import base64
+import os
 
 app = Flask(__name__)
 
+# Encryption key (must match the key used in Apex)
+# Read the key from an environment variable for security
+ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY', 'your-32-byte-encryption-key').encode('utf-8')
+
+def decrypt_token(encrypted_token):
+    """
+    Decrypt the access_token encrypted by Apex.
+    :param encrypted_token: Encrypted token (Base64 encoded)
+    :return: Decrypted access_token
+    """
+    try:
+        # Base64 decode
+        encrypted_data = base64.b64decode(encrypted_token)
+        # Extract IV (first 16 bytes) and the actual encrypted data
+        iv = encrypted_data[:16]
+        ciphertext = encrypted_data[16:]
+        # Initialize AES decryptor
+        cipher = AES.new(ENCRYPTION_KEY, AES.MODE_CBC, iv)
+        # Decrypt
+        decrypted_data = cipher.decrypt(ciphertext)
+        # Remove padding (PKCS7)
+        padding_length = decrypted_data[-1]
+        decrypted_data = decrypted_data[:-padding_length]
+        return decrypted_data.decode('utf-8')
+    except Exception as e:
+        raise ValueError("Decryption failed: " + str(e))
+
 @app.route('/api/getCustomObjectInfo', methods=['GET'])
 def get_sf_objects():
-    # Step 1: Get access_token and instance_url from query parameters
-    access_token = request.args.get('access_token')
+    """
+    Retrieve custom objects in Salesforce that have not been modified in the last 90 days.
+    """
+    # Step 1: Get encrypted access_token from the header and instance_url from query parameters
+    encrypted_token = request.headers.get('Authorization', '').split('Bearer ')[-1]
     instance_url = request.args.get('instance_url')
 
     # Step 2: Validate required parameters
-    if not access_token or not instance_url:
-        return jsonify({
-            'error': 'Both access_token and instance_url are required'
-        }), 400
+    if not encrypted_token or not instance_url:
+        return jsonify({'error': 'Both Authorization header and instance_url are required'}), 400
 
     try:
-        # Step 3: Initialize Salesforce connection
+        # Step 3: Decrypt the access_token
+        access_token = decrypt_token(encrypted_token)
+    except Exception as e:
+        return jsonify({'error': 'Invalid token: ' + str(e)}), 401
+
+    try:
+        # Step 4: Initialize Salesforce connection
         sf = Salesforce(instance_url=instance_url, session_id=access_token)
 
-        # Step 4: Get list of all custom objects
+        # Step 5: Get all custom objects
         objects = sf.describe()['sobjects']
         custom_objects = [
             obj['name'] for obj in objects
             if obj.get('custom') and obj.get('name').endswith('__c')
         ]
 
-        # Step 5: Check for inactive custom objects
+        # Step 6: Check for inactive custom objects
         inactive_objects = []
         for obj_name in custom_objects:
             try:
-                # Query each custom object using LAST_N_DAYS:90
+                # Query if any records have been modified in the last 90 days
                 query = f"SELECT Id FROM {obj_name} WHERE LastModifiedDate >= LAST_N_DAYS:90 LIMIT 1"
                 records = sf.query(query)['records']
                 if not records:
@@ -39,7 +76,7 @@ def get_sf_objects():
                 print(f"Error querying {obj_name}: {e}")
                 continue
 
-        # Step 6: Return the list of inactive custom objects
+        # Step 7: Return the list of inactive custom objects
         return jsonify({'inactive_objects': inactive_objects})
 
     except Exception as e:
@@ -47,4 +84,5 @@ def get_sf_objects():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
+    # Start the Flask service
     app.run(debug=True)
