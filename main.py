@@ -6,7 +6,7 @@ import base64
 app = Flask(__name__)
 
 # Hardcoded encryption key (must match the key used in Apex)
-ENCRYPTION_KEY = b'your-32-byte-encryption-key'  # Replace with your actual 32-byte key
+ENCRYPTION_KEY = b'3MVG9aNlkJwuH9vPePXJ1vP3a1vEBPqE'  # Replace with your actual 32-byte key
 
 def decrypt_token(encrypted_token):
     """
