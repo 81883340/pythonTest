@@ -8,30 +8,26 @@ app = Flask(__name__)
 ENCRYPTION_KEY = b'3MVG9aNlkJwuH9vPePXJ1vP3a1vEBPqE'  # 32-byte key
 
 def decrypt_token(encrypted_token):
-    """
-    Decrypt the access_token encrypted by Apex.
-    :param encrypted_token: Encrypted token (Base64 encoded)
-    :return: Decrypted access_token
-    """
     try:
-        # Base64 decode the encrypted token
         encrypted_data = base64.b64decode(encrypted_token)
+        print(f"Encrypted data (Base64 decoded): {encrypted_data}")
         
-        # Extract IV (first 16 bytes) and ciphertext
         iv = encrypted_data[:16]
+        print(f"IV (hex): {iv.hex()}")
+        
         ciphertext = encrypted_data[16:]
+        print(f"Ciphertext (hex): {ciphertext.hex()}")
         
-        # Initialize AES cipher
         cipher = AES.new(ENCRYPTION_KEY, AES.MODE_CBC, iv)
-        
-        # Decrypt the ciphertext
         decrypted_data = cipher.decrypt(ciphertext)
+        print(f"Decrypted data (with padding): {decrypted_data}")
         
-        # Remove PKCS7 padding
         padding_length = decrypted_data[-1]
-        decrypted_data = decrypted_data[:-padding_length]
+        print(f"Padding length: {padding_length}")
         
-        # Return the decrypted token as a string
+        decrypted_data = decrypted_data[:-padding_length]
+        print(f"Decrypted data (without padding): {decrypted_data}")
+        
         return decrypted_data.decode('utf-8')
     except Exception as e:
         raise ValueError("Decryption failed: " + str(e))
