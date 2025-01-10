@@ -60,7 +60,8 @@ def get_sf_objects():
 
     try:
         # Step 3: Decrypt the access_token
-        access_token = decrypt_token(encrypted_token)
+        # access_token = decrypt_token(encrypted_token)
+        access_token = encrypted_token
     except Exception as e:
         return jsonify({'error': 'Invalid token: ' + str(e)}), 401
 
