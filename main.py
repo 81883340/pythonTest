@@ -31,6 +31,18 @@ def decrypt_token(encrypted_token):
     except Exception as e:
         raise ValueError("Decryption failed: " + str(e))
 
+def initialize_salesforce_connection(access_token, instance_url):
+    """
+    Initialize a Salesforce connection using the provided access_token and instance_url.
+    :param access_token: Decrypted access_token
+    :param instance_url: Salesforce instance URL
+    :return: Salesforce connection object
+    """
+    try:
+        return Salesforce(instance_url=instance_url, session_id=access_token)
+    except Exception as e:
+        raise ValueError(f"Failed to initialize Salesforce connection: {str(e)}")
+
 @app.route('/api/getCustomObjectInfo', methods=['GET'])
 def get_sf_objects():
     """
@@ -52,7 +64,7 @@ def get_sf_objects():
 
     try:
         # Step 4: Initialize Salesforce connection
-        sf = Salesforce(instance_url=instance_url, session_id=access_token)
+        sf = initialize_salesforce_connection(access_token, instance_url)
 
         # Step 5: Get all custom objects
         objects = sf.describe()['sobjects']
@@ -109,7 +121,7 @@ def delete_custom_object():
 
     try:
         # Step 5: Initialize Salesforce connection
-        sf = Salesforce(instance_url=instance_url, session_id=access_token)
+        sf = initialize_salesforce_connection(access_token, instance_url)
 
         # Step 6: Use Metadata API to delete the custom object
         metadata = sf.mdapi  # Access Metadata API
