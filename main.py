@@ -47,15 +47,16 @@ def initialize_salesforce_connection(access_token, instance_url):
 @app.route('/api/getCustomObjectInfo', methods=['GET'])
 def get_sf_objects():
     """
-    Retrieve custom objects in Salesforce that have not been modified in the last 90 days.
+    Retrieve custom objects in Salesforce that have not been modified in the last N days.
     """
-    # Step 1: Get encrypted access_token from the header and instance_url from query parameters
+    # Step 1: Get encrypted access_token, instance_url, and days from query parameters
     encrypted_token = request.args.get('access_token')
     instance_url = request.args.get('instance_url')
+    days = request.args.get('days', default=90, type=int)  # Default to 90 days if not provided
 
     # Step 2: Validate required parameters
     if not encrypted_token or not instance_url:
-        return jsonify({'error': 'Both Authorization header and instance_url are required'}), 400
+        return jsonify({'error': 'Both access_token and instance_url are required'}), 400
 
     try:
         # Step 3: Decrypt the access_token
@@ -78,8 +79,8 @@ def get_sf_objects():
         inactive_objects = []
         for obj_name in custom_objects:
             try:
-                # Query if any records have been modified in the last 90 days
-                query = f"SELECT Id FROM {obj_name} WHERE LastModifiedDate >= LAST_N_DAYS:90 LIMIT 1"
+                # Query if any records have been modified in the last N days
+                query = f"SELECT Id FROM {obj_name} WHERE LastModifiedDate >= LAST_N_DAYS:{days} LIMIT 1"
                 records = sf.query(query)['records']
                 if not records:
                     inactive_objects.append(obj_name)
@@ -185,6 +186,7 @@ def delete_custom_object():
 
     # Step 8: Return the results of the delete operations
     return jsonify({'results': results})
+
 if __name__ == '__main__':
     # Start the Flask service
     app.run(debug=True)
